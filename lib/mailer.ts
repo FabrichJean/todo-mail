@@ -1,0 +1,144 @@
+import nodemailer from "nodemailer";
+import MailComposer from "nodemailer/lib/mail-composer/index.js";
+import { google } from "googleapis";
+import { prisma } from "@/lib/prisma";
+import { decrypt } from "@/lib/crypto";
+import { renderTemplate, nl2br } from "@/lib/template";
+import type { GmailAccount } from "@/generated/prisma/client";
+
+type Message = { from: string; to: string; subject: string; html: string };
+
+async function sendViaSmtp(account: GmailAccount, message: Message) {
+  if (!account.appPassword) {
+    throw new Error(`Compte SMTP ${account.email} sans mot de passe d'application enregistré`);
+  }
+  const transport = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: account.email, pass: decrypt(account.appPassword) },
+  });
+  await transport.sendMail(message);
+}
+
+function buildRawMessage(message: Message): Promise<string> {
+  return new Promise((resolve, reject) => {
+    new MailComposer(message).compile().build((err: Error | null, mimeMessage: Buffer) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const raw = mimeMessage
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+      resolve(raw);
+    });
+  });
+}
+
+// L'envoi OAuth passe par l'API Gmail (et non le SMTP + XOAUTH2 de Gmail, plus fragile
+// et sujet à des rejets d'authentification même avec un token valide et le bon scope).
+async function sendViaGmailApi(account: GmailAccount, message: Message) {
+  if (!account.refreshToken) {
+    throw new Error(`Compte OAuth ${account.email} sans refresh token enregistré`);
+  }
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET manquants dans .env");
+  }
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  oauth2Client.setCredentials({ refresh_token: decrypt(account.refreshToken) });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const raw = await buildRawMessage(message);
+  await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+}
+
+function buildMessage(account: GmailAccount, params: { recipient: string; subject: string; body: string }): Message {
+  return { from: account.email, to: params.recipient, subject: params.subject, html: params.body };
+}
+
+export type SendResult = { status: "sent" } | { status: "failed"; error: string };
+
+export async function sendTemplatedEmail(params: {
+  userId: string;
+  accountId: string;
+  templateId?: string;
+  recipient: string;
+  subject?: string;
+  body?: string;
+  variables?: Record<string, string>;
+}): Promise<SendResult> {
+  const account = await prisma.gmailAccount.findFirst({
+    where: { id: params.accountId, userId: params.userId },
+  });
+
+  const logFailure = async (error: string, subject: string, body: string) => {
+    await prisma.sentEmail.create({
+      data: {
+        userId: params.userId,
+        gmailAccountId: params.accountId,
+        templateId: params.templateId,
+        recipient: params.recipient,
+        subject,
+        body,
+        status: "failed",
+        error,
+      },
+    });
+    return { status: "failed", error } as const;
+  };
+
+  if (!account || !account.isActive) {
+    return logFailure("Compte Gmail introuvable ou inactif", params.subject ?? "", params.body ?? "");
+  }
+
+  let subject = params.subject ?? "";
+  let body = params.body ?? "";
+
+  if (params.templateId) {
+    const template = await prisma.template.findFirst({
+      where: { id: params.templateId, userId: params.userId },
+    });
+    if (!template) {
+      return logFailure("Template introuvable", subject, body);
+    }
+    const variables = params.variables ?? {};
+    subject = renderTemplate(template.subject, variables);
+    body = renderTemplate(template.body, variables);
+  }
+
+  // Le corps est stocké en texte avec de simples retours à la ligne ; on les convertit
+  // en <br> juste avant l'envoi puisque le message part en HTML.
+  body = nl2br(body);
+
+  try {
+    const message = buildMessage(account, { recipient: params.recipient, subject, body });
+    if (account.type === "smtp") {
+      await sendViaSmtp(account, message);
+    } else if (account.type === "oauth") {
+      await sendViaGmailApi(account, message);
+    } else {
+      throw new Error(`Type de compte Gmail inconnu: ${account.type}`);
+    }
+
+    await prisma.sentEmail.create({
+      data: {
+        userId: params.userId,
+        gmailAccountId: account.id,
+        templateId: params.templateId,
+        recipient: params.recipient,
+        subject,
+        body,
+        status: "sent",
+      },
+    });
+    return { status: "sent" };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    return logFailure(error, subject, body);
+  }
+}

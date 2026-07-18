@@ -4,9 +4,13 @@ import Link from "next/link";
 import NavLinks from "./NavLinks";
 import ThemeToggle from "./ThemeToggle";
 import LanguageToggle from "./LanguageToggle";
+import SidebarUser, { type SidebarUserInfo } from "./SidebarUser";
 import { IconSend } from "./icons";
+import { useI18n } from "./I18nProvider";
 
-export default function Sidebar() {
+export default function Sidebar({ user }: { user: SidebarUserInfo }) {
+  const { dict } = useI18n();
+
   return (
     <>
       <div className="flex items-center gap-2 border-b border-border bg-surface p-3 md:hidden">
@@ -28,9 +32,12 @@ export default function Sidebar() {
           </Link>
           <NavLinks />
         </div>
-        <div className="flex flex-col gap-1">
-          <LanguageToggle />
-          <ThemeToggle />
+        <div className="flex flex-col gap-3">
+          <SidebarUser user={user} signOutLabel={dict.sidebar.signOut} />
+          <div className="flex flex-col gap-1">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
     </>
