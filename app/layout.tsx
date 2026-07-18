@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavLinks from "./NavLinks";
-import ThemeToggle from "./ThemeToggle";
+import { I18nProvider } from "./I18nProvider";
+import { getServerDictionary } from "@/lib/i18n/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,27 +15,38 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Prospection Mail",
-  description: "Envoi d'emails automatique avec templates via Gmail",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { locale } = await getServerDictionary();
+  return {
+    title: "Todo Mail",
+    description:
+      locale === "fr"
+        ? "Envoi d'emails automatique avec templates via Gmail"
+        : "Automated templated email sending via Gmail",
+  };
+}
 
 const THEME_INIT_SCRIPT = `
 try {
   var stored = localStorage.getItem('theme');
-  var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var isDark;
+  if (stored === 'light') isDark = false;
+  else if (stored === 'system') isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  else isDark = true;
   if (isDark) document.documentElement.classList.add('dark');
 } catch (e) {}
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { locale } = await getServerDictionary();
+
   return (
     <html
-      lang="fr"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -45,21 +56,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="h-dvh overflow-hidden bg-background text-foreground">
-        <div className="flex h-full">
-          <aside className="flex h-full w-64 shrink-0 flex-col justify-between border-r border-border bg-surface p-4">
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-2 px-2 py-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-accent" />
-                <span className="font-semibold text-foreground">Todo Mail</span>
-              </div>
-              <NavLinks />
-            </div>
-            <ThemeToggle />
-          </aside>
-          <main className="h-full flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-4xl px-6 py-8 sm:px-10">{children}</div>
-          </main>
-        </div>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
   );
