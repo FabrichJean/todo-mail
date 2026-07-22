@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  avatarUrl     String?
+  createdAt     DateTime       @default(now())
+  sessions      Session[]
+  gmailAccounts GmailAccount[]
+  templates     Template[]
+  sentEmails    SentEmail[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model GmailAccount {
+  id           String    @id @default(cuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        String
+  type         String // "oauth" | "smtp"
+  displayName  String?
+  refreshToken String? // encrypted (oauth)
+  accessToken  String? // encrypted (oauth)
+  tokenExpiry  DateTime?
+  appPassword  String? // encrypted (smtp)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sentEmails   SentEmail[]
+
+  @@unique([userId, email])
+}
+
+model Template {
+  id         String      @id @default(cuid())
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  subject    String
+  body       String
+  variables  String      @default("[]") // JSON array of variable names
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  sentEmails SentEmail[]
+}
+
+model SentEmail {
+  id             String   @id @default(cuid())
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gmailAccountId String
+  gmailAccount   GmailAccount @relation(fields: [gmailAccountId], references: [id])
+  templateId     String?
+  template       Template?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipient      String
+  subject        String
+  body           String
+  status         String // "sent" | "failed"
+  error          String?
+  sentAt         DateTime @default(now())
+}
