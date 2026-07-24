@@ -8,7 +8,10 @@ export async function GET(request: NextRequest) {
     const oauth2Client = getGoogleLoginOAuthClient();
     const url = oauth2Client.generateAuthUrl({
       access_type: "offline",
-      prompt: "select_account",
+      // "consent" (plutôt que "select_account") force Google à renvoyer un refresh_token
+      // à chaque connexion, pas seulement au tout premier octroi du scope gmail.send —
+      // sans ça, le compte Gmail ne se connecte pas automatiquement par défaut.
+      prompt: "consent",
       scope: LOGIN_SCOPES,
     });
     return NextResponse.redirect(url);
