@@ -2,6 +2,19 @@ type IconProps = { className?: string };
 
 const base = "h-5 w-5 shrink-0";
 
+export function IconShield({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className ?? base}>
+      <path
+        d="M12 3.5 5 6v5.5c0 4.4 3 7.9 7 9 4-1.1 7-4.6 7-9V6l-7-2.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconGoogle({ className }: IconProps) {
   return (
     <svg viewBox="0 0 48 48" className={className ?? base}>
