@@ -27,7 +27,7 @@ export default async function LoginPage({
 
           {error && (
             <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-300">
-              {dict.auth.errorPrefix} {error}
+              {error === "banned" ? dict.auth.bannedMessage : `${dict.auth.errorPrefix} ${error}`}
             </p>
           )}
 

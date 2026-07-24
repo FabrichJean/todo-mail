@@ -47,6 +47,10 @@ export async function getSession() {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }
+  if (session.user.isBanned) {
+    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    return null;
+  }
 
   return session;
 }
