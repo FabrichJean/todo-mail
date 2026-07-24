@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconHome, IconPlug, IconLayout, IconSend, IconHistory } from "./icons";
+import { IconHome, IconPlug, IconLayout, IconSend, IconHistory, IconShield } from "./icons";
 import { useI18n } from "./I18nProvider";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -14,13 +14,17 @@ const NAV_LINKS: { href: string; label: (dict: Dictionary) => string; icon: type
   { href: "/history", label: (dict) => dict.nav.history, icon: IconHistory },
 ];
 
-export default function NavLinks() {
+export default function NavLinks({ isAdmin = false }: { isAdmin?: boolean } = {}) {
   const pathname = usePathname();
   const { dict } = useI18n();
 
+  const links = isAdmin
+    ? [...NAV_LINKS, { href: "/admin", label: (d: Dictionary) => d.admin.navLabel, icon: IconShield }]
+    : NAV_LINKS;
+
   return (
     <nav className="flex flex-col gap-3">
-      {NAV_LINKS.map((link) => {
+      {links.map((link) => {
         const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
         const Icon = link.icon;
         return (

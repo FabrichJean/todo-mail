@@ -8,7 +8,7 @@ import SidebarUser, { type SidebarUserInfo } from "./SidebarUser";
 import { IconSend } from "./icons";
 import { useI18n } from "./I18nProvider";
 
-export default function Sidebar({ user }: { user: SidebarUserInfo }) {
+export default function Sidebar({ user, isAdmin }: { user: SidebarUserInfo; isAdmin?: boolean }) {
   const { dict } = useI18n();
 
   return (
@@ -30,7 +30,7 @@ export default function Sidebar({ user }: { user: SidebarUserInfo }) {
             </span>
             <span className="font-semibold text-foreground">Todo Mail</span>
           </Link>
-          <NavLinks />
+          <NavLinks isAdmin={isAdmin} />
         </div>
         <div className="flex flex-col gap-3">
           <SidebarUser user={user} signOutLabel={dict.sidebar.signOut} />

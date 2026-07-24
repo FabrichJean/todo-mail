@@ -33,6 +33,10 @@ export async function GET(request: NextRequest) {
       update: { name: info.name, avatarUrl: info.picture },
     });
 
+    if (user.isBanned) {
+      return NextResponse.redirect(`${appUrl}/login?error=banned`);
+    }
+
     // La toute première personne à se connecter récupère les données pré-existantes
     // (comptes Gmail / templates / historique) créées avant l'introduction du multi-compte.
     if (isFirstUserEver && !existingUser) {

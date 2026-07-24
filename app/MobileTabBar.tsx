@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { IconHome, IconSend, IconLayout, IconPlug, IconHistory, IconMore } from "./icons";
+import { IconHome, IconSend, IconLayout, IconPlug, IconHistory, IconMore, IconShield } from "./icons";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import SidebarUser, { type SidebarUserInfo } from "./SidebarUser";
@@ -17,7 +17,7 @@ const TABS = [
   { href: "/history", icon: IconHistory },
 ];
 
-export default function MobileTabBar({ user }: { user: SidebarUserInfo }) {
+export default function MobileTabBar({ user, isAdmin }: { user: SidebarUserInfo; isAdmin?: boolean }) {
   const pathname = usePathname();
   const { dict } = useI18n();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -35,6 +35,16 @@ export default function MobileTabBar({ user }: { user: SidebarUserInfo }) {
       {settingsOpen && (
         <div className="fixed right-3 bottom-20 left-3 z-50 flex flex-col gap-2 md:hidden">
           <SidebarUser user={user} signOutLabel={dict.sidebar.signOut} />
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setSettingsOpen(false)}
+              className="card flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground"
+            >
+              <IconShield className="h-4 w-4 text-accent" />
+              {dict.admin.navLabel}
+            </Link>
+          )}
           <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-2 shadow-lg">
             <LanguageToggle />
             <ThemeToggle />
