@@ -44,6 +44,19 @@ Outil d'envoi d'emails automatique via Gmail, multi-utilisateur, avec choix de t
    - **Manuelle (rapide)** : active la validation en 2 étapes sur le compte Google à connecter, génère un [mot de passe d'application](https://myaccount.google.com/apppasswords), colle-le dans le formulaire.
    - **Automatique (OAuth)** : ajoute ton email comme testeur dans l'écran de consentement OAuth Google Cloud (mode test), puis clique "Se connecter avec Google" sur `/connect`.
 
+## Espace admin
+
+L'adresse définie dans `ADMIN_EMAIL` (`.env`, déjà réglée sur `contact.fabrich@gmail.com`) voit apparaître un lien **Admin** dans la sidebar après connexion — connexion identique au reste de l'app (Google), aucun compte séparé. Cliquer dessus mène à `/admin/unlock`, qui demande une confirmation par mot de passe (`ADMIN_PASSWORD`, propre à chaque environnement, déjà généré dans `.env.development` et `.env.production`) avant de laisser entrer dans `/admin` — un second facteur, propre à la session en cours (à refaire à chaque nouvelle connexion).
+
+Depuis `/admin` :
+- **Statistiques globales** : utilisateurs, comptes Gmail actifs, templates, emails envoyés/échoués (total, 24h, 7j, 30j).
+- **Par utilisateur** : comptes connectés, templates, emails envoyés (total + 24h), statut.
+- **Bannir** un utilisateur — déconnexion immédiate (toutes ses sessions sont révoquées) et connexion bloquée ensuite.
+- **Couper l'envoi** d'un utilisateur — il garde accès à l'app (templates, historique...) mais ne peut plus envoyer d'email.
+- **Limiter l'envoi** par utilisateur — un nombre max sur une fenêtre glissante de 24h / 7j / 30j (au choix). Dépassement = envois bloqués avec un message clair, jusqu'à ce que la fenêtre se libère.
+
+Le compte admin lui-même est protégé contre ces actions (impossible de se bannir/couper/limiter soi-même, que ce soit par erreur ou via l'API).
+
 ## Déploiement
 
 ⚠️ **Contrainte importante** : la base de données est un fichier SQLite local (`better-sqlite3`). Ça exclut les hébergeurs purement serverless/edge (Vercel, Netlify Functions...) dont le système de fichiers est éphémère et non partagé entre instances — le fichier serait perdu ou incohérent à chaque déploiement. Il faut un hébergeur avec **disque persistant** et un process qui tourne en continu (`next start`, pas de serverless).
@@ -64,9 +77,10 @@ GOOGLE_REDIRECT_URI=https://ton-domaine.com/api/gmail/oauth/callback
 GOOGLE_LOGIN_REDIRECT_URI=https://ton-domaine.com/api/auth/callback
 ENCRYPTION_KEY=<clé générée ci-dessus>
 NEXT_PUBLIC_APP_URL=https://ton-domaine.com
+ADMIN_PASSWORD=<mot de passe dédié à la prod, différent du dev>
 ```
 
-`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` viennent de `.env` (partagés avec le dev, pas besoin d'en recréer).
+`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `ADMIN_EMAIL` viennent de `.env` (partagés avec le dev, pas besoin d'en recréer).
 
 ### 2. Mettre à jour Google Cloud Console
 
@@ -84,6 +98,12 @@ Si l'écran de consentement est encore en mode "Testing", publie-le en productio
 git clone <ton-repo-url> todo-mail
 cd todo-mail
 npm ci
+```
+
+⚠️ `.env.production` est gitignoré donc pas présent après le clone — recrée-le sur le serveur avec les valeurs préparées à l'étape 1. La CLI Prisma (`migrate deploy`) ne le charge pas automatiquement comme le fait Next.js pour l'app elle-même, donc exporte-le explicitement avant :
+
+```bash
+set -a; source .env.production; set +a
 npx prisma migrate deploy   # applique les migrations sans prompt interactif
 npm run build
 ```
@@ -118,6 +138,7 @@ Pour un futur déploiement (mise à jour du code) :
 ```bash
 git pull
 npm ci
+set -a; source .env.production; set +a
 npx prisma migrate deploy
 npm run build
 pm2 restart todo-mail
@@ -146,6 +167,8 @@ fly secrets set \
   GOOGLE_LOGIN_REDIRECT_URI=https://ton-app.fly.dev/api/auth/callback \
   ENCRYPTION_KEY=... \
   NEXT_PUBLIC_APP_URL=https://ton-app.fly.dev \
+  ADMIN_EMAIL=xxxx@gmail.com \
+  ADMIN_PASSWORD=... \
   DATABASE_URL="file:/data/prod.db"
 
 fly deploy
