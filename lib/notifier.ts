@@ -11,6 +11,7 @@ export async function sendNotification(params: {
 }): Promise<void> {
   const serverUrl = process.env.NOTIFIER_SERVER_URL;
   const token = process.env.NOTIFIER_TOKEN;
+  const deviceId = process.env.NOTIFIER_DEVICE_ID;
   if (!serverUrl || !token) return;
 
   try {
@@ -22,6 +23,7 @@ export async function sendNotification(params: {
         body: params.body,
         type: "notification",
         metadata: params.metadata,
+        ...(typeof deviceId === "string" && deviceId.length > 0 ? { deviceId } : undefined),
       }),
       signal: AbortSignal.timeout(NOTIFIER_TIMEOUT_MS),
     });
