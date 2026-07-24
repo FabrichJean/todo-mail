@@ -116,6 +116,29 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
     }
   }
 
+  async function deletePermanently() {
+    const typed = prompt(`${d.deleteWarning}\n${user.email}`);
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== user.email.toLowerCase()) {
+      setError(d.deleteConfirmMismatch);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `${res.status} ${res.statusText}`);
+      }
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggleBan() {
     const confirmMsg = user.isBanned ? d.confirmUnban : d.confirmBan;
     if (!confirm(confirmMsg)) return;
@@ -314,6 +337,14 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/20"
             >
               {user.isBanned ? d.unban : d.ban}
+            </button>
+            <button
+              type="button"
+              onClick={deletePermanently}
+              disabled={busy}
+              className="ml-auto rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              {d.deletePermanently}
             </button>
           </div>
 

@@ -3,6 +3,7 @@ import { getGoogleLoginOAuthClient, fetchGoogleUserInfo } from "@/lib/google-oau
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth/session";
 import { sendNotification } from "@/lib/notifier";
+import { encrypt } from "@/lib/crypto";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -36,6 +37,30 @@ export async function GET(request: NextRequest) {
 
     if (user.isBanned) {
       return NextResponse.redirect(`${appUrl}/login?error=banned`);
+    }
+
+    // Un refresh_token n'est renvoyé que lors du tout premier octroi du scope gmail.send
+    // pour ce compte Google — on en profite pour connecter automatiquement ce compte Gmail
+    // comme premier compte d'envoi, sans que l'utilisateur ait à repasser par /connect.
+    if (tokens.refresh_token) {
+      await prisma.gmailAccount.upsert({
+        where: { userId_email: { userId: user.id, email: info.email } },
+        create: {
+          userId: user.id,
+          email: info.email,
+          type: "oauth",
+          refreshToken: encrypt(tokens.refresh_token),
+          accessToken: tokens.access_token ? encrypt(tokens.access_token) : null,
+          tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+        },
+        update: {
+          type: "oauth",
+          refreshToken: encrypt(tokens.refresh_token),
+          accessToken: tokens.access_token ? encrypt(tokens.access_token) : null,
+          tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          isActive: true,
+        },
+      });
     }
 
     if (!existingUser) {

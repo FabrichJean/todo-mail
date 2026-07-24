@@ -239,6 +239,10 @@ const fr = {
       limitRemove: "Retirer",
       confirmBan: "Bannir cet utilisateur ? Il sera immédiatement déconnecté et ne pourra plus se reconnecter.",
       confirmUnban: "Débannir cet utilisateur ?",
+      deletePermanently: "Supprimer définitivement",
+      deleteWarning:
+        "Irréversible : supprime uniquement le compte — ses comptes Gmail, templates et historique d'envoi sont conservés, juste détachés. Tape son adresse email pour confirmer :",
+      deleteConfirmMismatch: "Adresse email incorrecte — suppression annulée.",
     },
   },
   sendLimit: {

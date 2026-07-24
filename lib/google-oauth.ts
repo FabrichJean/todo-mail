@@ -6,8 +6,10 @@ export const GMAIL_SEND_SCOPES = [
   "openid",
 ];
 
-// Scope minimal pour la connexion (identité seulement, pas d'accès à l'envoi de mail).
+// Connexion : identité + envoi (gmail.send), pour connecter automatiquement le compte
+// Gmail utilisé à la connexion comme premier compte d'envoi, sans étape séparée.
 export const LOGIN_SCOPES = [
+  "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/userinfo.email",
   "https://www.googleapis.com/auth/userinfo.profile",
   "openid",

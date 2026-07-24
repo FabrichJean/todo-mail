@@ -241,6 +241,10 @@ const en = {
       limitRemove: "Remove",
       confirmBan: "Ban this user? They will be signed out immediately and won't be able to sign back in.",
       confirmUnban: "Unban this user?",
+      deletePermanently: "Delete permanently",
+      deleteWarning:
+        "Irreversible: deletes the account only — their Gmail accounts, templates and send history are kept, just detached. Type their email to confirm:",
+      deleteConfirmMismatch: "Email address didn't match — deletion cancelled.",
     },
   },
   sendLimit: {

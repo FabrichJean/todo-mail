@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const oauth2Client = getGoogleLoginOAuthClient();
     const url = oauth2Client.generateAuthUrl({
+      access_type: "offline",
       prompt: "select_account",
       scope: LOGIN_SCOPES,
     });
