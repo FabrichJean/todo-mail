@@ -97,7 +97,7 @@ Si l'écran de consentement est encore en mode "Testing", publie-le en productio
 # Sur le serveur
 git clone <ton-repo-url> todo-mail
 cd todo-mail
-npm ci
+npm ci   # régénère aussi le client Prisma (hook postinstall) — pas d'étape séparée requise
 ```
 
 ⚠️ `.env.production` est gitignoré donc pas présent après le clone — recrée-le sur le serveur avec les valeurs préparées à l'étape 1. La CLI Prisma (`migrate deploy`) ne le charge pas automatiquement comme le fait Next.js pour l'app elle-même, donc exporte-le explicitement avant :
