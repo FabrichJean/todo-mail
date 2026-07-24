@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+import { gmail } from "googleapis/build/src/apis/gmail";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 import { renderTemplate, nl2br } from "@/lib/template";
@@ -50,12 +51,12 @@ async function sendViaGmailApi(account: GmailAccount, message: Message) {
     throw new Error("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET manquants dans .env");
   }
 
-  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
   oauth2Client.setCredentials({ refresh_token: decrypt(account.refreshToken) });
 
-  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const gmailClient = gmail({ version: "v1", auth: oauth2Client });
   const raw = await buildRawMessage(message);
-  await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+  await gmailClient.users.messages.send({ userId: "me", requestBody: { raw } });
 }
 
 function buildMessage(account: GmailAccount, params: { recipient: string; subject: string; body: string }): Message {

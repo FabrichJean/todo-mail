@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 
 export const GMAIL_SEND_SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
@@ -24,7 +24,7 @@ export function getGoogleOAuthClient() {
     );
   }
 
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
 }
 
 // Client OAuth dédié à la connexion (identité) — même app Google Cloud, mais une
@@ -40,7 +40,7 @@ export function getGoogleLoginOAuthClient() {
     );
   }
 
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
 }
 
 export async function fetchGoogleUserEmail(accessToken: string): Promise<string> {
