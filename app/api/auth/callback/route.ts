@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleLoginOAuthClient, fetchGoogleUserInfo } from "@/lib/google-oauth";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth/session";
+import { sendNotification } from "@/lib/notifier";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -35,6 +36,14 @@ export async function GET(request: NextRequest) {
 
     if (user.isBanned) {
       return NextResponse.redirect(`${appUrl}/login?error=banned`);
+    }
+
+    if (!existingUser) {
+      await sendNotification({
+        title: "Nouvel utilisateur",
+        body: `${user.email} vient de s'inscrire sur Todo Mail.`,
+        metadata: { userId: user.id, email: user.email },
+      });
     }
 
     // La toute première personne à se connecter récupère les données pré-existantes

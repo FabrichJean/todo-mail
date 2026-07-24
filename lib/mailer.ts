@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 import { renderTemplate, nl2br } from "@/lib/template";
 import { checkSendAllowed } from "@/lib/send-limit";
+import { sendNotification } from "@/lib/notifier";
 import type { GmailAccount } from "@/generated/prisma/client";
 
 type Message = { from: string; to: string; subject: string; html: string };
@@ -143,6 +144,13 @@ export async function sendTemplatedEmail(params: {
         status: "sent",
       },
     });
+
+    await sendNotification({
+      title: "Email envoyé",
+      body: `${params.recipient} (depuis ${account.email})`,
+      metadata: { userId: params.userId, accountId: account.id, recipient: params.recipient },
+    });
+
     return { status: "sent" };
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
