@@ -4,6 +4,7 @@ import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/crypto";
 import { renderTemplate, nl2br } from "@/lib/template";
+import { checkSendAllowed } from "@/lib/send-limit";
 import type { GmailAccount } from "@/generated/prisma/client";
 
 type Message = { from: string; to: string; subject: string; html: string };
@@ -72,10 +73,6 @@ export async function sendTemplatedEmail(params: {
   body?: string;
   variables?: Record<string, string>;
 }): Promise<SendResult> {
-  const account = await prisma.gmailAccount.findFirst({
-    where: { id: params.accountId, userId: params.userId },
-  });
-
   const logFailure = async (error: string, subject: string, body: string) => {
     await prisma.sentEmail.create({
       data: {
@@ -91,6 +88,15 @@ export async function sendTemplatedEmail(params: {
     });
     return { status: "failed", error } as const;
   };
+
+  const sendCheck = await checkSendAllowed(params.userId);
+  if (!sendCheck.allowed) {
+    return logFailure(sendCheck.reason, params.subject ?? "", params.body ?? "");
+  }
+
+  const account = await prisma.gmailAccount.findFirst({
+    where: { id: params.accountId, userId: params.userId },
+  });
 
   if (!account || !account.isActive) {
     return logFailure("Compte Gmail introuvable ou inactif", params.subject ?? "", params.body ?? "");
