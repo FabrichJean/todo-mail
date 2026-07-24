@@ -5,6 +5,7 @@ import Papa from "papaparse";
 import { renderTemplate, nl2br } from "@/lib/template";
 import { interpolate } from "@/lib/i18n/interpolate";
 import Select from "../../Select";
+import SendLimitBanner from "../../SendLimitBanner";
 import { useI18n } from "../../I18nProvider";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -44,6 +45,8 @@ export default function SendPage() {
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{dict.send.title}</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{dict.send.subtitle}</p>
       </div>
+
+      <SendLimitBanner />
 
       <section className="grid grid-cols-1 gap-3 rounded-lg border border-zinc-200 bg-white p-5 sm:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-950">
         <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">

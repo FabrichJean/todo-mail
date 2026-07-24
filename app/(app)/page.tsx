@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import DashboardActions from "./DashboardActions";
+import SendLimitBanner from "../SendLimitBanner";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { requireUser } from "@/lib/auth/session";
 
@@ -39,6 +40,8 @@ export default async function Home() {
         <Stat label={dict.dashboard.statTemplates} value={templateCount} />
         <Stat label={dict.dashboard.statSentToday} value={sentToday} />
       </div>
+
+      <SendLimitBanner />
 
       <section className="card p-5">
         <div className="mb-3 flex items-center justify-between">
