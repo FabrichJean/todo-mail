@@ -1,8 +1,7 @@
 # Todo Mail.
 http://todo-mail.duckdns.org
 
-![Uploading image.png…]()
-
+![A beautiful sunset](/public/image.png)
 
 Outil d'envoi d'emails automatique via Gmail, multi-utilisateur, avec choix de template. Connexion à la plateforme via Google. Connexion des comptes Gmail d'envoi en mode automatique (OAuth Google) ou manuel (mot de passe d'application SMTP).
 
